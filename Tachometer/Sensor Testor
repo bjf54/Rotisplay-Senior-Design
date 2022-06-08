@@ -1,8 +1,6 @@
 // ECE 1896 Senior Design
 // Team 5 - Rotisplay
-// This program uses a magnetic position sensor to read the RPM of a magnet rotating around the device
-// Read RPM
-// Read fan positions for LED display
+// This program reads the input of a DRV5053 Hall Effect sensor
 
 void setup() 
 {
