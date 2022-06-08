@@ -1,9 +1,9 @@
 // ECE 1896 Senior Design
 // Team 5 - Rotisplay
-// This program reads the RPM of a magnet coming within and out of range of a Hall Effect Sensor
+// This program uses a hall effect sensor to read the RPM of a magnet rotating around the device
 
 // Set digital pin 2 as the hall pin
-int sensorPin = 2;
+int sensorPin = A0;
 
 // Set number of rotation trips for RPM reading (higher improves accuracy)
 float rotationThresh = 100.0;
@@ -30,7 +30,7 @@ void loop()
   {
 
     // The Hall Effect sensor reads LOW when a magnet is within range
-    if(digitalRead(sensorPin) == 0)
+    if(analogRead(sensorPin) == 0)
     {
       if(onState == false)
       {
