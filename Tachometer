@@ -4,60 +4,20 @@
 // Read RPM
 // Read fan positions for LED display
 
-// Include libraries
-#include <Arduino.h>
-
-// Define constants
-int sen = 14;
-const float wid = 0.012;    // Width of the fan blade
-const float rad = 0.045;    // Radius from point of detection in fan blade
-const float konst = 6.2832; // 2*pi
-float time_1;
-float time_2;
-float velocity;
-float diff;
-float tnet;
-float rpm;
-
-// Setup code that runs once at the beginning
 void setup() 
 {
-  // Set the baud rate
+  // Initialize serial communication at 9600 bits per second
   Serial.begin(9600);
-  
-  // set sen as an output
-  pinMode(sen, OUTPUT);
 }
 
-// Loop code to run indefinitely
 void loop() 
 {
-  // Read the time if the magnet is detected to be below 950
-  if(analogRead(sen)<950)
-  {
-    time_1 = millis();
-    delay(30);
-  }
+  // Read the input on analog pin 0
+  int sensorValue = analogRead(A0);
 
-  // Calculate RPM once the magnet is above 950
-  if(analogRead(sen)>950)
-  {
-    time_2 = millis();
+  // Print out the value read
+  Serial.println(sensorValue);
 
-    // Get difference in time
-    diff = (time_2 - time_1);
-
-    // Get the velocity of the sensor
-    velocity = wid/diff;
-
-    // Get the net time and convert it to mins
-    tnet = (konst*rad)/velocity;
-
-    // Calculate RPM
-    rpm = (60000)/tnet;
-  }
-
-  // Print the RPM reading
-  Serial.print("\nThe rpm is: ");
-  Serial.print(rpm);
+  // Delay in between reads for stability
+  delay(1);
 }
