@@ -6,7 +6,7 @@
 int sensorPin = A0;
 
 // Set number of rotation trips for RPM reading (higher improves accuracy)
-float rotationThresh = 100.0;
+float rotationThresh = 20.0;
 
 void setup() 
 {
@@ -21,35 +21,53 @@ void loop()
 {
   // Preallocate values for tachometer
   float rotationCount = 1.0;
-  float startTime = micros();
   bool onState = false;
+  float startTime = 0;;
+  bool startCountTime = true;
 
   // Count the number of times the hall sensor is tripped,
   // but without double counting during the same trip
   while(true)
-  {
+  { 
+    float sensorValue = analogRead(sensorPin);
 
     // The Hall Effect sensor reads LOW when a magnet is within range
-    if(analogRead(sensorPin) == 0)
+    if(sensorValue <= 200)
     {
+      // if first loop, start counting time
+      if (startCountTime == true)
+      {
+        startTime = micros();
+        startCountTime = false;
+        Serial.println("START TIME");
+      }
+      
       if(onState == false)
       {
         onState = true;
         rotationCount += 1.0;
+        
+        Serial.print("PASS ");
+        Serial.print(rotationCount);
+        Serial.println("");
       }
     }
 
+    // Reset onState to false when the sensor is out of range
     else
     {
       onState = false;
     }
 
+    // Break once the magnet has gone around enough times
     if (rotationCount >= rotationThresh)
     {
       break;
     }
-  }
 
+    delay(50);
+  }
+ 
   // Calculate time passed for rotation
   float endTime = micros();
   float timePassed = ((endTime - startTime)/1000000.0);
@@ -57,15 +75,16 @@ void loop()
   // Print information about time passed
   Serial.print("Time Passed: ");
   Serial.print(timePassed);
-  Serial.print(" s");
+  Serial.print(" s, ");
 
   // Calculate the RPM value
   float rpmValue = (rotationCount / timePassed) * 60.0;
 
   // Print information about the RPM
-  Serial.println("RPM: ");
+  Serial.print("RPM: ");
   Serial.print(rpmValue);
+  Serial.println("");
 
   // Delay in between reads for stability
-  delay(1);
+  delay(1000);
 }
