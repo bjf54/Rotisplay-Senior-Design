@@ -112,11 +112,11 @@ class Rotisplay(arcade.Window):
         super().__init__(width, height, title)
         self.set_update_rate(1.0 / 60.0)
 
-        self.LEDperArm = 64
+        self.LEDperArm = 70
 
         self.arms = []
 
-        self.numArms = 4
+        self.numArms = 2
 
         self.addArms(self.numArms)
 
@@ -161,9 +161,9 @@ class Rotisplay(arcade.Window):
 
 def main():
     """ Main function """
-    processor = ImageProcessor(64, "bigImage.jpg")
-    dataList = processor.getImageData()
     rotisplay = Rotisplay(SCREEN_SIZE, SCREEN_SIZE, SCREEN_TITLE)
+    processor = ImageProcessor(rotisplay.LEDperArm, "bigImage.jpg")
+    dataList = processor.getImageData()
     rotisplay.loadImageData(dataList)
     arcade.run()
 
