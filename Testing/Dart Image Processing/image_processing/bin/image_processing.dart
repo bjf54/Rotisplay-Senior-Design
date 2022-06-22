@@ -2,32 +2,52 @@ import 'dart:io';
 import 'dart:math';
 import 'package:image/image.dart';
 
-List<double> pol2cart(int r, int theta) {
-  final radians = theta * (pi / 180);
-  return [r * cos(radians), r * sin(radians)];
+Cartesian pol2cart(Polar pol) {
+  final radians = pol.theta * (pi / 180); // convert
+  return Cartesian((pol.r * cos(radians)), pol.r * sin(radians));
 }
 
 void main() {
-  final processor = new ImageProcessor(64, "bigImage.jpg");
+  ImageProcessor.run(64, "bigImage.jpg");
+}
+
+class Cartesian {
+  num x = 0, y = 0;
+
+  Cartesian(this.x, this.y);
+}
+
+class Polar {
+  num r = 0, theta = 0;
+
+  Polar(this.r, this.theta);
 }
 
 class ImageProcessor {
-  int numberLEDs;
-  String imgPath;
+  static void run(int numberLEDs, String imgPath) {
+    final image = decodeImage(File(imgPath).readAsBytesSync())!;
 
-  ImageProcessor(this.numberLEDs, this.imgPath) {
-    final image = decodeImage(File(this.imgPath).readAsBytesSync())!;
     final resizedImage = copyResize(image,
-        width: 120, height: 120, interpolation: Interpolation.average);
+        width: 2 * numberLEDs,
+        height: 2 * numberLEDs,
+        interpolation: Interpolation
+            .average); // average gave the cleanest look at lower resolutions
 
     final imgData = resizedImage.data;
 
-    final circArray = Image(64, 360);
+    final circArray = Image(64, 360, channels: Channels.rgb);
 
-    for (int i = 0; i < 500; i += 1) {
-      circArray.data[i] = 0xffffffff;
+    for (int angle = 0; angle < 360; angle += 1) {
+      for (int mag = 0; mag < numberLEDs; mag += 1) {
+        final cartCords = pol2cart(Polar(mag, angle));
+
+        circArray.data[mag + (angle * numberLEDs)] = imgData[
+            (numberLEDs + cartCords.x).round() +
+                resizedImage.width * (numberLEDs + cartCords.y).round()];
+      }
     }
 
-    File('test.png').writeAsBytesSync(encodePng(circArray));
+    // Might want to return the resulting image as a bmp
+    // File('circularImg.png').writeAsBytesSync(encodePng(circArray));
   }
 }
