@@ -1,12 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({Key? key}) : super(key: key);
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   BluetoothDevice? _connectedDevice;
   List<BluetoothService>? _services;
+
+  final _writeController = TextEditingController();
 
   void _addDeviceToList(final BluetoothDevice device) {
     if (!widget.devicesList.contains(device)) {
@@ -137,7 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   children: <Widget>[
                     Text(characteristic.uuid.toString(),
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 Row(
@@ -147,11 +151,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 Row(
                   children: <Widget>[
-                    Text(
-                        'Value: ${widget.readValues[characteristic.uuid].toString()}'),
+                    Text(widget.readValues[characteristic.uuid] == null
+                        ? 'Value: null'
+                        : 'Value: ${String.fromCharCodes(widget.readValues[characteristic.uuid]!)}'),
                   ],
                 ),
-                Divider(),
+                const Divider(),
               ],
             ),
           ),
@@ -180,52 +185,89 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (characteristic.properties.read) {
       buttons.add(
-        ButtonTheme(
-          minWidth: 10,
-          height: 20,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ElevatedButton(
-              // color: Colors.blue,
-              child: Text('READ', style: TextStyle(color: Colors.white)),
-              onPressed: () {},
-            ),
-          ),
-        ),
+        _buildBtn("Read", onPressed: () async {
+          final sub = characteristic.value.listen((value) {
+            setState(() {
+              widget.readValues[characteristic.uuid] = value;
+            });
+          });
+          await characteristic.read();
+          sub.cancel();
+        }),
       );
     }
-    if (characteristic.properties.write) {
+    if (characteristic.properties.write ||
+        characteristic.properties.writeWithoutResponse) {
       buttons.add(
-        ButtonTheme(
-          minWidth: 10,
-          height: 20,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ElevatedButton(
-              child: Text('WRITE', style: TextStyle(color: Colors.white)),
-              onPressed: () {},
-            ),
-          ),
-        ),
+        _buildBtn("Write", onPressed: () async {
+          await showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text("Write"),
+                  content: Row(
+                    children: [
+                      Expanded(
+                          child: TextField(
+                        controller: _writeController,
+                      ))
+                    ],
+                  ),
+                  actions: [
+                    Row(
+                      children: [
+                        _buildBtn("Send", onPressed: () async {
+                          await characteristic.write(
+                              utf8.encode(_writeController.text),
+                              withoutResponse: true);
+
+                          if (!mounted) return;
+                          Navigator.pop(context);
+                        }),
+                        _buildBtn("Cancel", onPressed: () {
+                          Navigator.pop(context);
+                        }),
+                      ],
+                    )
+                  ],
+                );
+              });
+        }),
       );
     }
     if (characteristic.properties.notify) {
       buttons.add(
-        ButtonTheme(
-          minWidth: 10,
-          height: 20,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ElevatedButton(
-              child: Text('NOTIFY', style: TextStyle(color: Colors.white)),
-              onPressed: () {},
-            ),
-          ),
+        _buildBtn(
+          "Notify",
+          onPressed: () async {
+            characteristic.value.listen((value) {
+              if (value.length != 3) {
+                setState(() {
+                  widget.readValues[characteristic.uuid] = value;
+                });
+              }
+            });
+            await characteristic.setNotifyValue(false);
+          },
         ),
       );
     }
 
     return buttons;
+  }
+
+  ButtonTheme _buildBtn(String text, {required void Function()? onPressed}) {
+    return ButtonTheme(
+      minWidth: 10,
+      height: 20,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          child: Text(text, style: const TextStyle(color: Colors.white)),
+        ),
+      ),
+    );
   }
 
   ListView _buildView() {
