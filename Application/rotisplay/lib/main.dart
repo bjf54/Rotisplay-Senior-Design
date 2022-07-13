@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart' as image_picker;
+import 'package:flutter_blue/flutter_blue.dart';
+
+import 'dart:io';
 
 import './image_processing.dart' as image_processor;
+
+import './bluetooth_connect.dart';
+import './image_view.dart';
+
+const numberLeds = 64;
 
 void main() {
   runApp(const Rotisplay());
@@ -25,132 +33,98 @@ class RotisplayMainPage extends StatefulWidget {
   final String title;
 
   @override
-  State<RotisplayMainPage> createState() => _MainPageState();
+  State<RotisplayMainPage> createState() => _RotisplayMainPageState();
 }
 
-class _MainPageState extends State<RotisplayMainPage> {
+class _RotisplayMainPageState extends State<RotisplayMainPage> {
+  final imagePicker = image_picker.ImagePicker();
+  dynamic imagePickerError;
+
+  File? originalImage;
+  File? processedImage;
+
+  BluetoothDevice? _connectedDevice;
+
+  Widget _buildImageButton(
+      BuildContext context, image_picker.ImageSource imageSource, String text) {
+    return ElevatedButton(
+        onPressed: () async {
+          try {
+            final img = await imagePicker.pickImage(source: imageSource);
+            // imagePath = File(img!.path);
+            setState(() {
+              originalImage = File(img!.path);
+              processedImage = image_processor.ImageProcessor.run(
+                  numberLEDs: numberLeds, imgPath: originalImage!.path);
+            });
+          } catch (e) {
+            setState(() {
+              imagePickerError = e;
+            });
+          }
+
+          if (!mounted) return;
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      ImageView(processedImage!, title: "Image View")));
+        },
+        child: Text(text));
+  }
+
+  Widget _buildImageSelection(BuildContext context) {
+    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      if (imagePickerError != null) Text(imagePickerError.toString()),
+      _buildImageButton(
+          context, image_picker.ImageSource.gallery, "Select Image"),
+      _buildImageButton(
+          context, image_picker.ImageSource.camera, "Take Picture"),
+    ]);
+  }
+
+  void _getBluetoothDevice() async {
+    final device = await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                BluetoothConnectPage(title: "Bluetooth Connection Page")));
+    if (device == null) return;
+    setState(() {
+      _connectedDevice = device;
+    });
+  }
+
+  Widget _buildBluetoothConnectionWidgets() {
+    String? connectionStatus;
+    if (_connectedDevice == null) {
+      connectionStatus = "Not Connected";
+    } else {
+      connectionStatus = "Connected to ${_connectedDevice!.name}";
+    }
+    return Column(
+      children: [
+        ElevatedButton(
+            onPressed: _getBluetoothDevice,
+            child: const Text("Connect to Rotisplay")),
+        Text("Status: $connectionStatus"),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
+          automaticallyImplyLeading: false,
         ),
-        body: Center(
-          child: _buildImageSelection(),
-        ));
-  }
-
-  Widget _buildImageSelection() {
-    return TextButton(onPressed: image_picker.ImagePicker(), child: child);
-  }
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+        body:
+            Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+          _buildBluetoothConnectionWidgets(),
+          Center(
+            child: _buildImageSelection(context),
+          ),
+        ]));
   }
 }

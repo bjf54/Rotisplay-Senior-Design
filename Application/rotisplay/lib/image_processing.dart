@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+
 import 'package:image/image.dart';
 import 'package:file/memory.dart';
 
@@ -9,7 +10,7 @@ Cartesian pol2cart(Polar pol) {
 }
 
 void main() {
-  ImageProcessor.run(64, "bigImage.jpg");
+  ImageProcessor.run(numberLEDs: 64, imgPath: "bigImage.jpg");
 }
 
 class Cartesian {
@@ -24,8 +25,10 @@ class Polar {
   Polar(this.r, this.theta);
 }
 
+var imgNum = 0;
+
 class ImageProcessor {
-  static File run(int numberLEDs, String imgPath) {
+  static File run({required int numberLEDs, required String imgPath}) {
     final image = decodeImage(File(imgPath).readAsBytesSync())!;
 
     final resizedImage = copyResize(image,
@@ -47,8 +50,10 @@ class ImageProcessor {
                 resizedImage.width * (numberLEDs + cartCords.y).round()];
       }
     }
-    final file = MemoryFileSystem().file("img.bmp");
+    final file = MemoryFileSystem().file("img$imgNum.bmp");
     file.writeAsBytesSync(encodeBmp(circArray));
+
+    imgNum += 1;
     return file;
   }
 }
