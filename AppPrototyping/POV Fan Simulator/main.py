@@ -161,7 +161,7 @@ class Rotisplay(arcade.Window):
 def main():
     """ Main function """
     rotisplay = Rotisplay(SCREEN_SIZE, SCREEN_SIZE, SCREEN_TITLE)
-    processor = ImageProcessor(rotisplay.LEDperArm, "Lenna.png")
+    processor = ImageProcessor(rotisplay.LEDperArm, "bigDickerson.jpg")
     dataList = processor.getImageData()
     rotisplay.loadImageData(dataList)
     arcade.run()

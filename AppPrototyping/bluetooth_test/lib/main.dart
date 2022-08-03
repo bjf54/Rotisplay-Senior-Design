@@ -196,6 +196,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }),
       );
     }
+    
     if (characteristic.properties.write ||
         characteristic.properties.writeWithoutResponse) {
       buttons.add(

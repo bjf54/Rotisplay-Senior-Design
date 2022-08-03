@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:math';
-import 'package:image/image.dart';
+import 'package:image/image.dart' as Img;
 
 Cartesian pol2cart(Polar pol) {
   final radians = pol.theta * (pi / 180); // convert
@@ -8,6 +8,7 @@ Cartesian pol2cart(Polar pol) {
 }
 
 void main() {
+  
   ImageProcessor.run(64, "bigImage.jpg");
 }
 
@@ -25,17 +26,17 @@ class Polar {
 
 class ImageProcessor {
   static void run(int numberLEDs, String imgPath) {
-    final image = decodeImage(File(imgPath).readAsBytesSync())!;
+    final image = Img.decodeImage(File(imgPath).readAsBytesSync())!;
 
-    final resizedImage = copyResize(image,
+    final resizedImage = Img.copyResize(image,
         width: 2 * numberLEDs,
         height: 2 * numberLEDs,
-        interpolation: Interpolation
+        interpolation: Img.Interpolation
             .average); // average gave the cleanest look at lower resolutions
 
     final imgData = resizedImage.data;
 
-    final circArray = Image(64, 360, channels: Channels.rgb);
+    final circArray = Img.Image(64, 360, channels: Img.Channels.rgb);
 
     for (int angle = 0; angle < 360; angle += 1) {
       for (int mag = 0; mag < numberLEDs; mag += 1) {

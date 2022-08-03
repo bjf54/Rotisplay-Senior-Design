@@ -45,5 +45,9 @@
 	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo Library Access is to select images to process on device and send over to the Rotisplay device.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is to take pictures to process on device and send over to the Rotisplay device</string>
 </dict>
 </plist>
