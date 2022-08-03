@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:image/image.dart';
+import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:file/memory.dart';
 
 Cartesian pol2cart(Polar pol) {
@@ -10,7 +11,11 @@ Cartesian pol2cart(Polar pol) {
 }
 
 void main() {
-  ImageProcessor.run(numberLEDs: 64, imgPath: "bigImage.jpg");
+  final imProcesser = ImageProcessor(
+    numberLEDs: 70,
+    fileSystem: MemoryFileSystem(),
+  );
+  imProcesser.run("bigImage.jpg");
 }
 
 class Cartesian {
@@ -25,21 +30,80 @@ class Polar {
   Polar(this.r, this.theta);
 }
 
+class ImagePackage {
+  ImagePackage({
+    required this.circular,
+    required this.reconstructed,
+    this.original,
+    this.average,
+    this.linear,
+    this.nearest,
+    this.cubic,
+  });
+
+  File circular, reconstructed;
+  File? original, average, linear, nearest, cubic;
+}
+
 var imgNum = 0;
 
 class ImageProcessor {
-  static File run({required int numberLEDs, required String imgPath}) {
-    final image = decodeImage(File(imgPath).readAsBytesSync())!;
+  int numberLEDs;
+  MemoryFileSystem fileSystem;
 
-    final resizedImage = copyResize(image,
-        width: 2 * numberLEDs,
-        height: 2 * numberLEDs,
-        interpolation: Interpolation
-            .average); // average gave the cleanest look at lower resolutions
+  ImageProcessor({required this.numberLEDs, required this.fileSystem});
+
+  Future<ImagePackage> run(String imgPath,
+      {img.Interpolation? interpolationType}) async {
+    final image = img.decodeImage(File(imgPath).readAsBytesSync())!;
+
+    final resizedImage = img.copyResize(
+      image,
+      width: 2 * numberLEDs,
+      height: 2 * numberLEDs,
+      interpolation: interpolationType ?? img.Interpolation.average,
+    ); // average gave the cleanest look at lower resolutions
+
+    final average = img.copyResize(
+      image,
+      width: 2 * numberLEDs,
+      height: 2 * numberLEDs,
+      interpolation: img.Interpolation.average,
+    );
+    final averageFile = MemoryFileSystem().file("avgImg.bmp");
+    averageFile.writeAsBytesSync(img.encodeBmp(average));
+
+    final cubic = img.copyResize(
+      image,
+      width: 2 * numberLEDs,
+      height: 2 * numberLEDs,
+      interpolation: img.Interpolation.cubic,
+    );
+    final cubicFile = MemoryFileSystem().file("cubicImg.bmp");
+    cubicFile.writeAsBytesSync(img.encodeBmp(cubic));
+
+    final linear = img.copyResize(
+      image,
+      width: 2 * numberLEDs,
+      height: 2 * numberLEDs,
+      interpolation: img.Interpolation.linear,
+    );
+    final linearFile = MemoryFileSystem().file("linearImg.bmp");
+    linearFile.writeAsBytesSync(img.encodeBmp(linear));
+
+    final nearest = img.copyResize(
+      image,
+      width: 2 * numberLEDs,
+      height: 2 * numberLEDs,
+      interpolation: img.Interpolation.nearest,
+    );
+    final nearestFile = MemoryFileSystem().file("nearestImg.bmp");
+    nearestFile.writeAsBytesSync(img.encodeBmp(nearest));
 
     final imgData = resizedImage.data;
 
-    final circArray = Image(64, 360, channels: Channels.rgb);
+    final circArray = img.Image(numberLEDs, 360, channels: img.Channels.rgba);
+    final reconstructedArray = img.Image(numberLEDs * 2, numberLEDs * 2);
 
     for (int angle = 0; angle < 360; angle += 1) {
       for (int mag = 0; mag < numberLEDs; mag += 1) {
@@ -48,12 +112,29 @@ class ImageProcessor {
         circArray.data[mag + (angle * numberLEDs)] = imgData[
             (numberLEDs + cartCords.x).round() +
                 resizedImage.width * (numberLEDs + cartCords.y).round()];
+
+        reconstructedArray[(numberLEDs + cartCords.x).round() +
+                resizedImage.width * (numberLEDs + cartCords.y).round()] =
+            imgData[(numberLEDs + cartCords.x).round() +
+                resizedImage.width * (numberLEDs + cartCords.y).round()];
       }
     }
-    final file = MemoryFileSystem().file("img$imgNum.bmp");
-    file.writeAsBytesSync(encodeBmp(circArray));
+    final circFile = MemoryFileSystem().file("circImg$imgNum.bmp");
+    circFile.writeAsBytesSync(img.encodeBmp(circArray));
+
+    final reconstructedFile =
+        MemoryFileSystem().file("reconstructedImg$imgNum.png");
+    reconstructedFile.writeAsBytesSync(img.encodePng(reconstructedArray));
 
     imgNum += 1;
-    return file;
+    return ImagePackage(
+      circular: circFile,
+      reconstructed: reconstructedFile,
+      average: averageFile,
+      cubic: cubicFile,
+      linear: linearFile,
+      nearest: nearestFile,
+      original: File(imgPath),
+    );
   }
 }
