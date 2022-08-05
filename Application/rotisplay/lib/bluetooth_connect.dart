@@ -101,7 +101,7 @@ class _BluetoothConnectState extends State<BluetoothConnectPage> {
                       await device.connect();
                     } catch (e) {
                       if (e.toString() != "already_connected") {
-                        rethrow;
+                        // rethrow;
                       }
                     }
                     services = await device.discoverServices();

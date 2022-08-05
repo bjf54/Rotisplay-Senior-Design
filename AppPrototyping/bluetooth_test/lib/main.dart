@@ -38,7 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final _writeController = TextEditingController();
 
   void _addDeviceToList(final BluetoothDevice device) {
-    if (!widget.devicesList.contains(device)) {
+    if (!widget.devicesList.contains(device) && device.name != '') {
       setState(() {
         widget.devicesList.add(device);
       });
@@ -196,7 +196,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }),
       );
     }
-    
+
     if (characteristic.properties.write ||
         characteristic.properties.writeWithoutResponse) {
       buttons.add(

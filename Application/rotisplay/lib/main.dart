@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file/memory.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:image_picker/image_picker.dart' as image_picker;
 import 'package:flutter_blue/flutter_blue.dart';
@@ -219,6 +220,7 @@ class _RotisplayMainPageState extends State<RotisplayMainPage> {
     setState(() {
       _connectedDevice = device;
     });
+    _sendConnectionNotification();
   }
 
   Widget _buildBluetoothConnectionWidgets() {
@@ -226,7 +228,6 @@ class _RotisplayMainPageState extends State<RotisplayMainPage> {
     if (_connectedDevice == null) {
       connectionStatus = "Not Connected";
     } else {
-      _sendConnectionNotification();
       connectionStatus = "Connected to ${_connectedDevice!.device.name}";
     }
     return Column(
@@ -283,24 +284,40 @@ class _RotisplayMainPageState extends State<RotisplayMainPage> {
 
   Future<void> sendImage() async {
     final deviceMtu = await _connectedDevice!.device.mtu.first;
-    log(deviceMtu.toString());
 
     // The -2 accounts for the brackets sent with the rest of the array
     // (since it is sent as a string ¯\_(ツ)_/¯)
-    final sendList = splitImg(
-        (deviceMtu ~/ 2) - 2, processedImages!.circular.readAsBytesSync());
+    final sendList = splitImg((deviceMtu ~/ 2) - 2, processedImages!.circular.readAsBytesSync());
     // (deviceMtu ~/ 2) - 2,
     // processedImage!.readAsBytesSync());
 
-    useCharacteristic!.write(utf8.encode("s!"));
+    EasyLoading.show(status: "Transfering Image...");
 
+    useCharacteristic!.write(utf8.encode("s!"));
+    await Future.delayed(const Duration(seconds: 1));
+
+    int numSends = 0;
     for (final packet in sendList) {
-      log(packet.toString());
+      numSends++;
       await useCharacteristic!
-          .write(utf8.encode(packet.toString()), withoutResponse: true);
-      // await useCharacteristic!.write(packet);
+          // .write(utf8.encode(packet.toString()), withoutResponse: true);
+          .write(packet, withoutResponse: true);
+      // await useCharacteristic!
+      //     .write(utf8.encode(sendList[0].toString()), withoutResponse: true);
     }
+
+    log(numSends.toString());
+
+    // var readRawData = <int>[];
+    // final test = utf8.encode("tc!");
+    // while (listEquals(readRawData, utf8.encode("tc!"))) {
+    //   readRawData = await useCharacteristic!.read();
+    //   await Future.delayed(const Duration(milliseconds: 100));
+    // }
+
+    await Future.delayed(const Duration(seconds: 2));
     useCharacteristic!.write(utf8.encode("e!"));
+    await EasyLoading.dismiss();
   }
 
   Widget _buildImageView() {
